@@ -8,6 +8,11 @@
     "Alihan"
   ],
   "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.alihan.hotbarscale.HotbarScaleClient"
+    ]
+  },
   "mixins": [
     {
       "config": "hotbar-scale.mixins.json",
