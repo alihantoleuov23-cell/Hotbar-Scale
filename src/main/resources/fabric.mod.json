@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "hotbar-scale",
+  "version": "${version}",
+  "name": "Hotbar Scale",
+  "description": "Allows changing the Minecraft hotbar size.",
+  "authors": [
+    "Alihan"
+  ],
+  "environment": "client",
+  "mixins": [
+    {
+      "config": "hotbar-scale.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
