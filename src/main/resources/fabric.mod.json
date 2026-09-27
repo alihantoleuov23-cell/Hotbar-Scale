@@ -11,6 +11,9 @@
   "entrypoints": {
     "client": [
       "com.alihan.hotbarscale.HotbarScaleClient"
+    ],
+    "modmenu": [
+      "com.alihan.hotbarscale.HotbarScaleModMenu"
     ]
   },
   "mixins": [
