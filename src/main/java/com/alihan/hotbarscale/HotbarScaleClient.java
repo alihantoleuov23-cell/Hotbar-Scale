@@ -10,17 +10,6 @@ import org.lwjgl.glfw.GLFW;
 
 public class HotbarScaleClient implements ClientModInitializer {
 
-    private static final float[] SCALES = {
-            0.33f,
-            0.66f,
-            1.00f,
-            1.33f,
-            1.66f,
-            2.00f
-    };
-
-    private static int scaleIndex = 2;
-
     private static final KeyMapping DECREASE_SIZE =
             KeyBindingHelper.registerKeyBinding(
                     new KeyMapping(
@@ -42,23 +31,50 @@ public class HotbarScaleClient implements ClientModInitializer {
             );
 
     public static float getScale() {
-        return SCALES[scaleIndex];
+        return HotbarScaleConfig.getHotbarScale() / 100.0f;
     }
 
     @Override
     public void onInitializeClient() {
+
+        HotbarScaleConfig.load();
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
             while (DECREASE_SIZE.consumeClick()) {
-                if (scaleIndex > 0) {
-                    scaleIndex--;
+
+                int current =
+                        HotbarScaleConfig.getHotbarScale();
+
+                if (current > HotbarScaleConfig.MIN_SCALE) {
+
+                    HotbarScaleConfig.setHotbarScale(
+                            Math.max(
+                                    HotbarScaleConfig.MIN_SCALE,
+                                    current - 5
+                            )
+                    );
+
+                    HotbarScaleConfig.save();
                     showCurrentSize(client);
                 }
             }
 
             while (INCREASE_SIZE.consumeClick()) {
-                if (scaleIndex < SCALES.length - 1) {
-                    scaleIndex++;
+
+                int current =
+                        HotbarScaleConfig.getHotbarScale();
+
+                if (current < HotbarScaleConfig.MAX_SCALE) {
+
+                    HotbarScaleConfig.setHotbarScale(
+                            Math.min(
+                                    HotbarScaleConfig.MAX_SCALE,
+                                    current + 5
+                            )
+                    );
+
+                    HotbarScaleConfig.save();
                     showCurrentSize(client);
                 }
             }
@@ -66,15 +82,15 @@ public class HotbarScaleClient implements ClientModInitializer {
     }
 
     private static void showCurrentSize(
-            net.minecraft.client.Minecraft client) {
-
+            net.minecraft.client.Minecraft client
+    ) {
         if (client.player != null) {
-            int percent = Math.round(getScale() * 100.0f);
 
             client.player.displayClientMessage(
                     Component.literal(
-                            "Hotbar: " + (scaleIndex + 1)
-                                    + "/6 (" + percent + "%)"
+                            "Hotbar: "
+                                    + HotbarScaleConfig.getHotbarScale()
+                                    + "%"
                     ),
                     true
             );
