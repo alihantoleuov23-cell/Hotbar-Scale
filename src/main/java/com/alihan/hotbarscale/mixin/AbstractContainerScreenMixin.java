@@ -33,23 +33,19 @@ public class AbstractContainerScreenMixin {
             method = "render",
             at = @At("HEAD")
     )
-    private void hotbarScale$beginRender(
-            GuiGraphics context,
+    private void hotbarScale$begin(
+            GuiGraphics graphics,
             int mouseX,
             int mouseY,
             float delta,
             CallbackInfo ci
     ) {
-        Matrix3x2fStack matrices = context.pose();
-
         float scale = hotbarScale$getScale();
 
-        if (scale == 1.0f) {
-            return;
-        }
+        Matrix3x2fStack matrices = graphics.pose();
 
-        float centerX = context.guiWidth() / 2.0f;
-        float centerY = context.guiHeight() / 2.0f;
+        float centerX = graphics.guiWidth() / 2.0f;
+        float centerY = graphics.guiHeight() / 2.0f;
 
         matrices.pushMatrix();
 
@@ -62,19 +58,13 @@ public class AbstractContainerScreenMixin {
             method = "render",
             at = @At("TAIL")
     )
-    private void hotbarScale$endRender(
-            GuiGraphics context,
+    private void hotbarScale$end(
+            GuiGraphics graphics,
             int mouseX,
             int mouseY,
             float delta,
             CallbackInfo ci
     ) {
-        float scale = hotbarScale$getScale();
-
-        if (scale == 1.0f) {
-            return;
-        }
-
-        context.pose().popMatrix();
+        graphics.pose().popMatrix();
     }
 }
