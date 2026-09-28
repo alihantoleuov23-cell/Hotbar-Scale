@@ -1,6 +1,6 @@
 package com.alihan.hotbarscale.mixin;
 
-import com.alihan.hotbarscale.HotbarScaleClient;
+import com.alihan.hotbarscale.HotbarScaleConfig;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
@@ -13,38 +13,57 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public class InGameHudMixin {
 
-    @Inject(
-            method = "renderItemHotbar",
-            at = @At("HEAD")
-    )
-    private void hotbarScale$begin(
-            GuiGraphics context,
-            DeltaTracker deltaTracker,
-            CallbackInfo ci
-    ) {
-        Matrix3x2fStack matrices = context.pose();
-
-        float scale = HotbarScaleClient.getScale();
-
-        float centerX = context.guiWidth() / 2.0f;
-        float bottomY = context.guiHeight();
-
-        matrices.pushMatrix();
-
-        matrices.translate(centerX, bottomY);
-        matrices.scale(scale, scale);
-        matrices.translate(-centerX, -bottomY);
+    private float hotbarScale$getScale() {
+        return HotbarScaleConfig.getHotbarScale() / 100.0f;
     }
 
     @Inject(
-            method = "renderItemHotbar",
-            at = @At("TAIL")
+            method = "renderHotbarAndDecorations",
+            at = @At("HEAD")
     )
-    private void hotbarScale$end(
-            GuiGraphics context,
+    private void hotbarScale$beginHudScale(
+            GuiGraphics graphics,
             DeltaTracker deltaTracker,
             CallbackInfo ci
     ) {
-        context.pose().popMatrix();
+        float scale = hotbarScale$getScale();
+
+        if (scale == 1.0f) {
+            return;
+        }
+
+        Matrix3x2fStack matrices = graphics.pose();
+
+        /*
+         * Точка масштабирования находится по центру хотбара.
+         *
+         * Благодаря этому:
+         * - сам хотбар остаётся на привычном месте;
+         * - сердца масштабируются вместе с ним;
+         * - голод масштабируется вместе с ним;
+         * - XP масштабируется вместе с ним.
+         */
+        float centerX = graphics.guiWidth() / 2.0f;
+        float centerY = graphics.guiHeight() - 11.0f;
+
+        matrices.pushMatrix();
+
+        matrices.translate(centerX, centerY);
+        matrices.scale(scale, scale);
+        matrices.translate(-centerX, -centerY);
+    }
+
+    @Inject(
+            method = "renderHotbarAndDecorations",
+            at = @At("TAIL")
+    )
+    private void hotbarScale$endHudScale(
+            GuiGraphics graphics,
+            DeltaTracker deltaTracker,
+            CallbackInfo ci
+    ) {
+        if (hotbarScale$getScale() != 1.0f) {
+            graphics.pose().popMatrix();
+        }
     }
 }
