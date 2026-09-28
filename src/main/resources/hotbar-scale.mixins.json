@@ -5,7 +5,9 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "InGameHudMixin",
-    "AbstractContainerScreenMixin"
+    "AbstractContainerScreenMixin",
+    "CreativeModeInventoryScreenMixin",
+    "InventoryScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
