@@ -46,9 +46,10 @@ public class AbstractContainerScreenMixin {
             return mouseX;
         }
 
-        double centerX =
-                ((AbstractContainerScreen<?>)
-                        (Object) this).width / 2.0;
+        AbstractContainerScreen<?> screen =
+                (AbstractContainerScreen<?>) (Object) this;
+
+        double centerX = screen.width / 2.0;
 
         return centerX + (mouseX - centerX) / scale;
     }
@@ -60,9 +61,10 @@ public class AbstractContainerScreenMixin {
             return mouseY;
         }
 
-        double centerY =
-                ((AbstractContainerScreen<?>)
-                        (Object) this).height / 2.0;
+        AbstractContainerScreen<?> screen =
+                (AbstractContainerScreen<?>) (Object) this;
+
+        double centerY = screen.height / 2.0;
 
         return centerY + (mouseY - centerY) / scale;
     }
@@ -93,8 +95,11 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * Масштабируем фон контейнера.
+     * =========================
+     * ФОН GUI
+     * =========================
      */
+
     @Inject(
             method = "renderBackground",
             at = @At("HEAD")
@@ -124,8 +129,11 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * Масштабируем слоты, предметы, текст и остальные элементы.
+     * =========================
+     * СЛОТЫ / ПРЕДМЕТЫ / ТЕКСТ
+     * =========================
      */
+
     @Inject(
             method = "renderContents",
             at = @At("HEAD")
@@ -155,97 +163,47 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * Исправляем координаты курсора при определении наведённого слота.
+     * =========================
+     * ПРЕДМЕТ ПОД КУРСОРОМ
+     * =========================
+     *
+     * Очень важно:
+     * renderCarriedItem работает отдельно от renderContents.
+     *
+     * Поэтому здесь мы:
+     * 1. переводим физический курсор в логические координаты;
+     * 2. накладываем тот же scale;
+     *
+     * В результате предмет остаётся ровно под курсором
+     * и имеет тот же масштаб, что и GUI.
      */
+
     @Inject(
-            method = "getHoveredSlot",
-            at = @At("HEAD"),
-            cancellable = true
+            method = "renderCarriedItem",
+            at = @At("HEAD")
     )
-    private void hotbarScale$getHoveredSlot(
-            double mouseX,
-            double mouseY,
-            CallbackInfoReturnable<Slot> cir
+    private void hotbarScale$beginCarriedItem(
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            CallbackInfo ci
     ) {
-        double logicalMouseX =
-                hotbarScale$logicalMouseX(mouseX);
-
-        double logicalMouseY =
-                hotbarScale$logicalMouseY(mouseY);
-
-        AbstractContainerScreen<?> screen =
-                (AbstractContainerScreen<?>) (Object) this;
-
-        for (Slot slot : screen.getMenu().slots) {
-            if (!slot.isActive()) {
-                continue;
-            }
-
-            double slotX = this.leftPos + slot.x;
-            double slotY = this.topPos + slot.y;
-
-            if (logicalMouseX >= slotX
-                    && logicalMouseX < slotX + 16.0
-                    && logicalMouseY >= slotY
-                    && logicalMouseY < slotY + 16.0) {
-
-                cir.setReturnValue(slot);
-                return;
-            }
-        }
-
-        cir.setReturnValue(null);
+        hotbarScale$push(graphics);
     }
 
-    /*
-     * Исправляем проверку клика за пределами GUI.
-     */
-    @ModifyVariable(
-            method = "hasClickedOutside",
-            at = @At("HEAD"),
-            ordinal = 0,
-            argsOnly = true
+    @Inject(
+            method = "renderCarriedItem",
+            at = @At("TAIL")
     )
-    private double hotbarScale$outsideMouseX(double mouseX) {
-        return hotbarScale$logicalMouseX(mouseX);
+    private void hotbarScale$endCarriedItem(
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            CallbackInfo ci
+    ) {
+        hotbarScale$pop(graphics);
     }
 
-    @ModifyVariable(
-            method = "hasClickedOutside",
-            at = @At("HEAD"),
-            ordinal = 1,
-            argsOnly = true
-    )
-    private double hotbarScale$outsideMouseY(double mouseY) {
-        return hotbarScale$logicalMouseY(mouseY);
-    }
-
-    /*
-     * Исправляем координаты мыши при прокрутке контейнеров.
-     */
-    @ModifyVariable(
-            method = "mouseScrolled",
-            at = @At("HEAD"),
-            ordinal = 0,
-            argsOnly = true
-    )
-    private double hotbarScale$scrollMouseX(double mouseX) {
-        return hotbarScale$logicalMouseX(mouseX);
-    }
-
-    @ModifyVariable(
-            method = "mouseScrolled",
-            at = @At("HEAD"),
-            ordinal = 1,
-            argsOnly = true
-    )
-    private double hotbarScale$scrollMouseY(double mouseY) {
-        return hotbarScale$logicalMouseY(mouseY);
-    }
-
-    /*
-     * Исправляем позицию предмета, который держится курсором.
-     */
     @ModifyVariable(
             method = "renderCarriedItem",
             at = @At("HEAD"),
@@ -268,5 +226,136 @@ public class AbstractContainerScreenMixin {
         return (int) Math.round(
                 hotbarScale$logicalMouseY(mouseY)
         );
+    }
+
+    /*
+     * =========================
+     * SNAPBACK ПРЕДМЕТ
+     * =========================
+     *
+     * Когда Minecraft возвращает предмет обратно
+     * после перетаскивания, он тоже должен иметь
+     * тот же масштаб.
+     */
+
+    @Inject(
+            method = "renderSnapbackItem",
+            at = @At("HEAD")
+    )
+    private void hotbarScale$beginSnapback(
+            GuiGraphics graphics,
+            CallbackInfo ci
+    ) {
+        hotbarScale$push(graphics);
+    }
+
+    @Inject(
+            method = "renderSnapbackItem",
+            at = @At("TAIL")
+    )
+    private void hotbarScale$endSnapback(
+            GuiGraphics graphics,
+            CallbackInfo ci
+    ) {
+        hotbarScale$pop(graphics);
+    }
+
+    /*
+     * =========================
+     * ПОИСК СЛОТА ПОД КУРСОРОМ
+     * =========================
+     */
+
+    @Inject(
+            method = "getHoveredSlot",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void hotbarScale$getHoveredSlot(
+            double mouseX,
+            double mouseY,
+            CallbackInfoReturnable<Slot> cir
+    ) {
+        double logicalMouseX =
+                hotbarScale$logicalMouseX(mouseX);
+
+        double logicalMouseY =
+                hotbarScale$logicalMouseY(mouseY);
+
+        AbstractContainerScreen<?> screen =
+                (AbstractContainerScreen<?>) (Object) this;
+
+        for (Slot slot : screen.getMenu().slots) {
+
+            if (!slot.isActive()) {
+                continue;
+            }
+
+            double slotX = this.leftPos + slot.x;
+            double slotY = this.topPos + slot.y;
+
+            if (logicalMouseX >= slotX
+                    && logicalMouseX < slotX + 16.0
+                    && logicalMouseY >= slotY
+                    && logicalMouseY < slotY + 16.0) {
+
+                cir.setReturnValue(slot);
+                return;
+            }
+        }
+
+        cir.setReturnValue(null);
+    }
+
+    /*
+     * =========================
+     * КЛИК ВНЕ GUI
+     * =========================
+     */
+
+    @ModifyVariable(
+            method = "hasClickedOutside",
+            at = @At("HEAD"),
+            ordinal = 0,
+            argsOnly = true
+    )
+    private double hotbarScale$outsideMouseX(double mouseX) {
+        return hotbarScale$logicalMouseX(mouseX);
+    }
+
+    @ModifyVariable(
+            method = "hasClickedOutside",
+            at = @At("HEAD"),
+            ordinal = 1,
+            argsOnly = true
+    )
+    private double hotbarScale$outsideMouseY(double mouseY) {
+        return hotbarScale$logicalMouseY(mouseY);
+    }
+
+    /*
+     * =========================
+     * ПРОКРУТКА
+     * =========================
+     */
+
+    @ModifyVariable(
+            method = "mouseScrolled",
+            at = @At("HEAD"),
+            ordinal = 0,
+            argsOnly = true
+    )
+    private double hotbarScale$scrollMouseX(double mouseX) {
+        return hotbarScale$logicalMouseX(mouseX);
+    }
+
+    @ModifyVariable(
+            method = "mouseScrolled",
+            at = @At("HEAD"),
+            ordinal = 1,
+            argsOnly = true
+    )
+    private double hotbarScale$scrollMouseY(double mouseY) {
+        return hotbarScale$logicalMouseY(mouseY);
     }
 }
