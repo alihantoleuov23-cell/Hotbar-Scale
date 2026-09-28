@@ -95,11 +95,8 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * =========================
-     * ФОН GUI
-     * =========================
+     * Фон GUI.
      */
-
     @Inject(
             method = "renderBackground",
             at = @At("HEAD")
@@ -129,11 +126,8 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * =========================
-     * СЛОТЫ / ПРЕДМЕТЫ / ТЕКСТ
-     * =========================
+     * Слоты, предметы, текст и остальное содержимое.
      */
-
     @Inject(
             method = "renderContents",
             at = @At("HEAD")
@@ -163,21 +157,8 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * =========================
-     * ПРЕДМЕТ ПОД КУРСОРОМ
-     * =========================
-     *
-     * Очень важно:
-     * renderCarriedItem работает отдельно от renderContents.
-     *
-     * Поэтому здесь мы:
-     * 1. переводим физический курсор в логические координаты;
-     * 2. накладываем тот же scale;
-     *
-     * В результате предмет остаётся ровно под курсором
-     * и имеет тот же масштаб, что и GUI.
+     * Предмет, который находится под курсором.
      */
-
     @Inject(
             method = "renderCarriedItem",
             at = @At("HEAD")
@@ -229,15 +210,8 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * =========================
-     * SNAPBACK ПРЕДМЕТ
-     * =========================
-     *
-     * Когда Minecraft возвращает предмет обратно
-     * после перетаскивания, он тоже должен иметь
-     * тот же масштаб.
+     * Анимация возврата предмета.
      */
-
     @Inject(
             method = "renderSnapbackItem",
             at = @At("HEAD")
@@ -261,11 +235,8 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * =========================
-     * ПОИСК СЛОТА ПОД КУРСОРОМ
-     * =========================
+     * Определение слота под физическим курсором.
      */
-
     @Inject(
             method = "getHoveredSlot",
             at = @At("HEAD"),
@@ -286,7 +257,6 @@ public class AbstractContainerScreenMixin {
                 (AbstractContainerScreen<?>) (Object) this;
 
         for (Slot slot : screen.getMenu().slots) {
-
             if (!slot.isActive()) {
                 continue;
             }
@@ -308,11 +278,8 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * =========================
-     * КЛИК ВНЕ GUI
-     * =========================
+     * Клик за пределами GUI.
      */
-
     @ModifyVariable(
             method = "hasClickedOutside",
             at = @At("HEAD"),
@@ -330,32 +297,6 @@ public class AbstractContainerScreenMixin {
             argsOnly = true
     )
     private double hotbarScale$outsideMouseY(double mouseY) {
-        return hotbarScale$logicalMouseY(mouseY);
-    }
-
-    /*
-     * =========================
-     * ПРОКРУТКА
-     * =========================
-     */
-
-    @ModifyVariable(
-            method = "mouseScrolled",
-            at = @At("HEAD"),
-            ordinal = 0,
-            argsOnly = true
-    )
-    private double hotbarScale$scrollMouseX(double mouseX) {
-        return hotbarScale$logicalMouseX(mouseX);
-    }
-
-    @ModifyVariable(
-            method = "mouseScrolled",
-            at = @At("HEAD"),
-            ordinal = 1,
-            argsOnly = true
-    )
-    private double hotbarScale$scrollMouseY(double mouseY) {
         return hotbarScale$logicalMouseY(mouseY);
     }
 }
