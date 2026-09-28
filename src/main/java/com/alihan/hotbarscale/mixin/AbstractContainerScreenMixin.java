@@ -42,6 +42,10 @@ public class AbstractContainerScreenMixin {
     ) {
         float scale = hotbarScale$getScale();
 
+        if (scale == 1.0f) {
+            return;
+        }
+
         Matrix3x2fStack matrices = graphics.pose();
 
         float centerX = graphics.guiWidth() / 2.0f;
@@ -65,6 +69,12 @@ public class AbstractContainerScreenMixin {
             float delta,
             CallbackInfo ci
     ) {
+        float scale = hotbarScale$getScale();
+
+        if (scale == 1.0f) {
+            return;
+        }
+
         graphics.pose().popMatrix();
     }
 }
