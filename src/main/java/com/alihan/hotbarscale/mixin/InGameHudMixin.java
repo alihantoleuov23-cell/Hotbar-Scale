@@ -21,7 +21,7 @@ public class InGameHudMixin {
             method = "renderHotbarAndDecorations",
             at = @At("HEAD")
     )
-    private void hotbarScale$beginHudScale(
+    private void hotbarScale$begin(
             GuiGraphics graphics,
             DeltaTracker deltaTracker,
             CallbackInfo ci
@@ -34,15 +34,6 @@ public class InGameHudMixin {
 
         Matrix3x2fStack matrices = graphics.pose();
 
-        /*
-         * Точка масштабирования находится по центру хотбара.
-         *
-         * Благодаря этому:
-         * - сам хотбар остаётся на привычном месте;
-         * - сердца масштабируются вместе с ним;
-         * - голод масштабируется вместе с ним;
-         * - XP масштабируется вместе с ним.
-         */
         float centerX = graphics.guiWidth() / 2.0f;
         float centerY = graphics.guiHeight() - 11.0f;
 
@@ -57,7 +48,7 @@ public class InGameHudMixin {
             method = "renderHotbarAndDecorations",
             at = @At("TAIL")
     )
-    private void hotbarScale$endHudScale(
+    private void hotbarScale$end(
             GuiGraphics graphics,
             DeltaTracker deltaTracker,
             CallbackInfo ci
