@@ -8,14 +8,21 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.inventory.Slot;
 import org.joml.Matrix3x2fStack;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(AbstractContainerScreen.class)
 public class AbstractContainerScreenMixin {
+
+    @Shadow
+    protected int leftPos;
+
+    @Shadow
+    protected int topPos;
 
     private float hotbarScale$getScale() {
         AbstractContainerScreen<?> screen =
@@ -33,30 +40,30 @@ public class AbstractContainerScreenMixin {
     }
 
     private double hotbarScale$logicalMouseX(double mouseX) {
-        AbstractContainerScreen<?> screen =
-                (AbstractContainerScreen<?>) (Object) this;
-
         float scale = hotbarScale$getScale();
 
         if (scale == 1.0f) {
             return mouseX;
         }
 
-        double centerX = screen.width / 2.0;
+        double centerX =
+                ((AbstractContainerScreen<?>)
+                        (Object) this).width / 2.0;
+
         return centerX + (mouseX - centerX) / scale;
     }
 
     private double hotbarScale$logicalMouseY(double mouseY) {
-        AbstractContainerScreen<?> screen =
-                (AbstractContainerScreen<?>) (Object) this;
-
         float scale = hotbarScale$getScale();
 
         if (scale == 1.0f) {
             return mouseY;
         }
 
-        double centerY = screen.height / 2.0;
+        double centerY =
+                ((AbstractContainerScreen<?>)
+                        (Object) this).height / 2.0;
+
         return centerY + (mouseY - centerY) / scale;
     }
 
@@ -86,9 +93,7 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * Масштабируем фон GUI:
-     * текстура контейнера, модель игрока и остальные элементы,
-     * которые рисуются через renderBackground/renderBg.
+     * Масштабируем фон контейнера.
      */
     @Inject(
             method = "renderBackground",
@@ -119,8 +124,7 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * Масштабируем слоты, предметы, подписи и остальные элементы
-     * контейнерного GUI.
+     * Масштабируем слоты, предметы, текст и остальные элементы.
      */
     @Inject(
             method = "renderContents",
@@ -151,9 +155,7 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * Minecraft проверяет слот по логическим координатам.
-     * После масштабирования физический курсор нужно преобразовать
-     * обратно в исходную систему координат GUI.
+     * Исправляем координаты курсора при определении наведённого слота.
      */
     @Inject(
             method = "getHoveredSlot",
@@ -165,19 +167,22 @@ public class AbstractContainerScreenMixin {
             double mouseY,
             CallbackInfoReturnable<Slot> cir
     ) {
+        double logicalMouseX =
+                hotbarScale$logicalMouseX(mouseX);
+
+        double logicalMouseY =
+                hotbarScale$logicalMouseY(mouseY);
+
         AbstractContainerScreen<?> screen =
                 (AbstractContainerScreen<?>) (Object) this;
-
-        double logicalMouseX = hotbarScale$logicalMouseX(mouseX);
-        double logicalMouseY = hotbarScale$logicalMouseY(mouseY);
 
         for (Slot slot : screen.getMenu().slots) {
             if (!slot.isActive()) {
                 continue;
             }
 
-            double slotX = screen.getGuiLeft() + slot.x;
-            double slotY = screen.getGuiTop() + slot.y;
+            double slotX = this.leftPos + slot.x;
+            double slotY = this.topPos + slot.y;
 
             if (logicalMouseX >= slotX
                     && logicalMouseX < slotX + 16.0
@@ -193,8 +198,7 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * Проверка "кликнул ли игрок за пределами GUI".
-     * Нужна для корректной работы кликов после масштабирования.
+     * Исправляем проверку клика за пределами GUI.
      */
     @ModifyVariable(
             method = "hasClickedOutside",
@@ -217,7 +221,7 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * Скролл тоже должен учитывать масштаб GUI.
+     * Исправляем координаты мыши при прокрутке контейнеров.
      */
     @ModifyVariable(
             method = "mouseScrolled",
@@ -240,8 +244,7 @@ public class AbstractContainerScreenMixin {
     }
 
     /*
-     * Предмет, который держим курсором, тоже должен находиться
-     * точно под физическим курсором.
+     * Исправляем позицию предмета, который держится курсором.
      */
     @ModifyVariable(
             method = "renderCarriedItem",
