@@ -4,7 +4,8 @@
   "package": "com.alihan.hotbarscale.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "InGameHudMixin"
+    "InGameHudMixin",
+    "InventoryScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
